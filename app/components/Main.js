@@ -1,5 +1,6 @@
 // Include React
 var React = require("react");
+var axios = require("axios");
 
 // Here we include all of the sub-components
 var Search = require("./children/Search");
@@ -100,14 +101,17 @@ var Main = React.createClass({
             </p>
           </div>
         </div>
-        <Search setTerm = {this.setTerm}/>
-        <Results results = {this.state.results}
-          SaveArticle={this.saveArticle}/>
-        <Saved savedArticles={this.state.saved} 
-          deleteArticle={this.deleteArticle}/>
+        <Search />
+        
       </div>
     )
   }
 });
 
 module.exports = Main;
+
+            // setTerm = {this.setTerm}
+        // <Results results = {this.state.results}
+        //   SaveArticle={this.saveArticle}/>
+        // <Saved savedArticles={this.state.saved} 
+        //   deleteArticle={this.deleteArticle}/>
