@@ -2,62 +2,92 @@
 var React = require("react");
 
 // Here we include all of the sub-components
-var Child1 = require("./children/Child1");
+var Search = require("./children/Search");
+var Results = require("./children/Results");
+var Saved = require("./children/Saved");
 
 // Helper for making AJAX requests to our API
 var helpers = require("./utils/helpers");
 
+
 // Creating the Main component
 var Main = React.createClass({
 
-  // Here we set a generic state associated with the number of clicks
-  // Note how we added in this history state variable
   getInitialState: function() {
-    return { searchTerm: "", results: "", history: [] };
+    return {
+      topic: "",
+      start: "",
+      end: "",
+      results: [],
+      saved: []
+    }
   },
 
-  // The moment the page renders get the History
-  componentDidMount: function() {
-    // Get the latest history.
-    helpers.getHistory().then(function(response) {
-      console.log(response);
-      if (response !== this.state.history) {
-        console.log("History", response.data);
-        this.setState({ history: response.data });
-      }
-    }.bind(this));
+  // The moment the page renders get the saved articles
+  componentDidMount: function(){
+    axios.get('/api/saved')
+      .then(function(response){
+        this.setState({
+          saved: response.data
+        });
+      }.bind(this));
   },
 
   // If the component changes (i.e. if a search is entered)...
-  componentDidUpdate: function() {
+  componentDidUpdate: function(prevProps, prevState){
 
-    // Run the query for the address
-    helpers.runQuery(this.state.searchTerm).then(function(data) {
-      if (data !== this.state.results) {
-        console.log("Address", data);
-        this.setState({ results: data });
+    if(prevState.topic != this.state.topic){
+      console.log("UPDATED!");
 
-        // After we've received the result... then post the search term to our history.
-        helpers.postHistory(this.state.searchTerm).then(function() {
-          console.log("Updated!");
-
-          // After we've done the post... then get the updated history
-          helpers.getHistory().then(function(response) {
-            console.log("Current History", response.data);
-
-            console.log("History", response.data);
-
-            this.setState({ history: response.data });
-
-          }.bind(this));
-        }.bind(this));
-      }
-    }.bind(this));
+      helpers.runQuery(this.state.topic, this.state.start, this.state.end)
+        .then(function(data){
+          console.log(data);
+          if (data != this.state.results)
+          {
+            this.setState({
+              results: data
+            })
+          }
+        }.bind(this))
+    }
   },
+
   // This function allows childrens to update the parent.
-  setTerm: function(term) {
-    this.setState({ searchTerm: term });
+  setTerm: function(articleTopic, startYear, endYear){
+    this.setState({
+      topic: articleTopic,
+      start: startYear,
+      end: endYear
+    })
   },
+
+  getArticle: function(){
+    axios.get('/api/saved')
+      .then(function(response){
+        this.setState({
+          saved: response.data
+        });
+      }.bind(this));
+  },
+
+  saveArticle: function(title, date, url){
+    helpers.postArticle(title, date, url);
+    this.getArticle();
+  },
+
+  deleteArticle: function(article){
+    axios.delete('/api/saved/' + article._id)
+      .then(function(response){
+        this.setState({
+          saved: response.data
+        });
+        return response;
+      }.bind(this));
+
+    this.getArticle();
+  },
+
+
   // Here we render the function
   render: function() {
     return (
@@ -69,31 +99,15 @@ var Main = React.createClass({
               <em>Search for and annotate articles of interest.</em>
             </p>
           </div>
-
-          <div className="col-md-6">
-
-            <Child1 />
-
-          </div>
-
-          <div className="col-md-6">
-
-            <Child2 />
-
-          </div>
-
         </div>
-
-        <div className="row">
-
-          <Child3 />
-
-        </div>
-
+        <Search setTerm = {this.setTerm}/>
+        <Results results = {this.state.results}
+          SaveArticle={this.saveArticle}/>
+        <Saved savedArticles={this.state.saved} 
+          deleteArticle={this.deleteArticle}/>
       </div>
-    );
+    )
   }
 });
 
-// Export the component back for use in other files
 module.exports = Main;
